@@ -13,7 +13,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#87CEEB;color:#1c2b39;overflow-x:hidden;min-height:100vh;min-height:100dvh;position:relative}
-#app{height:100vh;height:100dvh;display:flex;flex-direction:column;position:relative;z-index:1;overflow:hidden}
+#app{height:100vh;height:100dvh;display:flex;flex-direction:column;position:relative;z-index:1;overflow:hidden;padding-bottom:64px}
 .safe-bottom{padding-bottom:env(safe-area-inset-bottom,0)}
 .hidden{display:none!important}
 .flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-8{gap:8px}.gap-12{gap:12px}.gap-16{gap:16px}.flex-1{flex:1}.flex-wrap{flex-wrap:wrap}.text-center{text-align:center}.text-right{text-align:right}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.flex-shrink-0{flex-shrink:0}
@@ -27,7 +27,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .overflow-hidden{overflow:hidden}.text-ellipsis{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.line-clamp-2{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 /* Nav */
-#nav{background:rgba(255,255,255,.92);border-top:1px solid rgba(0,0,0,.08);flex-shrink:0;backdrop-filter:blur(10px)}
+#nav{position:fixed;bottom:0;left:0;right:0;z-index:60;background:rgba(255,255,255,.92);border-top:1px solid rgba(0,0,0,.08);flex-shrink:0;backdrop-filter:blur(10px)}
 .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;height:64px;border:none;background:none;cursor:pointer;color:#7a8896;transition:all .2s;font-size:11px}
 .nav-btn.active{color:#d97706;transform:scale(1.1)}
 .nav-btn .ico{font-size:20px;margin-bottom:2px}
@@ -146,17 +146,18 @@ function makeState(){
       if(!d.assessments)d.assessments=[];
       if(!d.achievements)d.achievements=[];
       if(!d.shop)d.shop={custom:[],redeemed:[]};
+      if(!d.todos)d.todos=[];
       return d;
     }
   }catch(e){}
-  return {character:{name:'玩家',joinedAt:dateStr(),streak:0,lastActive:dateStr()},attributes:initAttrs(),dailyLogs:[],assessments:[],achievements:[],shop:{custom:[],redeemed:[]}};
+  return {character:{name:'玩家',joinedAt:dateStr(),streak:0,lastActive:dateStr()},attributes:initAttrs(),dailyLogs:[],assessments:[],achievements:[],shop:{custom:[],redeemed:[]},todos:[]};
 }
 
 function dateStr(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function now(){return new Date().toISOString()}
 function yesterday(){return dateStr(new Date(Date.now()-86400000))}
 
-function save(){localStorage.setItem('earth-online',JSON.stringify({character:state.character,attributes:state.attributes,dailyLogs:state.dailyLogs,assessments:state.assessments,achievements:state.achievements,shop:state.shop}))}
+function save(){localStorage.setItem('earth-online',JSON.stringify({character:state.character,attributes:state.attributes,dailyLogs:state.dailyLogs,assessments:state.assessments,achievements:state.achievements,shop:state.shop,todos:state.todos}))}
 
 // ==================== STATE ====================
 let state=makeState();
@@ -178,8 +179,16 @@ function addDailyLog(logData){
   else if(la===yesterday())ns=state.character.streak+1;
   else ns=1;
 
-  const {xp,isCrit}=calcXP(logData.difficulty,logData.outcome,ns);
-  const newLog={id:Date.now().toString(),date:today,timestamp:now(),dimension:logData.dimension,content:logData.content,difficulty:logData.difficulty,outcome:logData.outcome,mood:logData.mood||3,energy:logData.energy||3,xp,isCrit};
+  // 负面记录：直接扣固定 XP（无暴击/连续加成）
+  const isNegative=logData.type==='negative';
+  let xp,isCrit=false;
+  if(isNegative){
+    xp=-(Math.max(1,Math.round(logData.xpAmount||30)));
+  }else{
+    const r=calcXP(logData.difficulty,logData.outcome,ns);
+    xp=r.xp;isCrit=r.isCrit;
+  }
+  const newLog={id:Date.now().toString(),date:today,timestamp:now(),dimension:logData.dimension,content:logData.content,difficulty:logData.difficulty,outcome:logData.outcome,mood:logData.mood||3,energy:logData.energy||3,xp,isCrit,type:isNegative?'negative':'positive'};
 
   const na={...state.attributes};
   na[logData.dimension]={xp:na[logData.dimension].xp+xp};
@@ -446,12 +455,62 @@ function createRadarSVG(dimLvls){
 function renderLog(main){
   let dim=DIM_IDS[0],content='',diff=3,outcome='completed',mood=3,energy=3;
   let submitting=false;
+  let mode='positive';          // 'positive' | 'negative'
+  let negSel=0;
 
   const root=el('div',{className:'p-16 pb-32'});
   root.appendChild(el('div',{className:'font-18 font-bold text-white mb-16',innerHTML:'<span>✏️</span> 成长记录'}));
 
   const resultDiv=el('div',{className:'hidden'});
   root.appendChild(resultDiv);
+
+  // ===== 今日待办 =====
+  const todoCard=el('div',{className:'card'});
+  todoCard.appendChild(el('div',{className:'font-13 text-gray mb-12',textContent:'📋 今日待办'}));
+  const todoInputRow=el('div',{className:'flex gap-8 mb-8'});
+  const todoInput=el('input',{type:'text',placeholder:'要完成的小事...',maxLength:40});
+  const todoAddBtn=el('button',{className:'btn-sm',style:{background:'rgba(217,119,6,.15)',color:'#d97706',border:'none',borderRadius:12,cursor:'pointer',flexShrink:0},textContent:'➕'});
+  const todoList=el('div');
+  todoInputRow.appendChild(todoInput);todoInputRow.appendChild(todoAddBtn);
+  todoCard.appendChild(todoInputRow);
+  todoCard.appendChild(todoList);
+  root.appendChild(todoCard);
+
+  function renderTodoList(){
+    todoList.innerHTML='';
+    const todos=state.todos||[];
+    const pending=todos.filter(t=>!t.done);
+    if(pending.length===0){
+      todoList.appendChild(el('div',{className:'font-12 text-gray2 py-8',textContent:'还没有待办，添加一件小事吧 ✨'}));
+      return;
+    }
+    pending.forEach(t=>{
+      const row=el('div',{className:'flex items-center gap-8 py-6'});
+      const cb=el('input',{type:'checkbox',style:{width:18,height:18,accentColor:'#d97706'}});
+      cb.onchange=()=>{
+        t.done=true;t.doneAt=now();
+        const na={...state.attributes};
+        na.willpower={xp:(na.willpower.xp||0)+10};
+        state.attributes=na;
+        save();
+        showToast('✅ '+t.text+' 完成<br><span style="color:#d97706">+10 XP 自律</span>');
+        renderTodoList();
+      };
+      const label=el('span',{className:'font-13 flex-1',textContent:t.text});
+      const del=el('button',{style:{border:'none',background:'none',color:'#b8c4cc',cursor:'pointer',fontSize:14},textContent:'✕'});
+      del.onclick=()=>{state.todos=(state.todos||[]).filter(x=>x!==t);save();renderTodoList();};
+      row.appendChild(cb);row.appendChild(label);row.appendChild(del);
+      todoList.appendChild(row);
+    });
+  }
+  todoAddBtn.onclick=()=>{
+    const text=todoInput.value.trim();
+    if(!text)return;
+    state.todos=state.todos||[];
+    state.todos.push({id:Date.now().toString(),text,done:false,createdAt:now()});
+    save();todoInput.value='';renderTodoList();
+  };
+  renderTodoList();
 
   // Dimension picker
   const dimCard=el('div',{className:'card'});
@@ -513,26 +572,105 @@ function renderLog(main){
   moodCard.appendChild(energySlider);
   root.appendChild(moodCard);
 
-  // XP Preview
+  // XP Preview（正面）
   const xpCard=el('div',{className:'card text-center'});
   xpCard.innerHTML='<div class="font-12 text-gray2 mb-4">预计获得</div><div class="font-24 font-bold text-xp" id="xpPreview">~60 XP</div><div class="font-12 text-gray2 mt-4">10% 暴击×2 | 连续加成最高+50%</div>';
   root.appendChild(xpCard);
   function updateXPPreview(){xpCard.querySelector('#xpPreview').textContent='~'+diff*20+' XP';}
 
+  // ===== 负面记录卡片 =====
+  const NEGATIVES=[
+    {name:'🌙 熬夜到很晚',cost:40,dim:'vitality'},
+    {name:'⏳ 拖延一整天',cost:30,dim:'willpower'},
+    {name:'📱 刷手机停不下来',cost:20,dim:'willpower'},
+    {name:'🍔 暴饮暴食',cost:25,dim:'vitality'},
+    {name:'💸 冲动消费',cost:30,dim:'wealth'},
+    {name:'😠 对家人发脾气',cost:30,dim:'emotional'}
+  ];
+  const negCard=el('div',{className:'card hidden'});
+  negCard.appendChild(el('div',{className:'font-13 text-gray mb-12',textContent:'选择负面行为'}));
+  const negGrid=el('div',{className:'grid-3'});
+  const negAmountEl=el('div',{className:'text-center font-20 font-bold mt-12',style:{color:'#d64545'},textContent:'-40 XP'});
+  NEGATIVES.forEach((n,i)=>{
+    const b=el('button',{className:'btn-outline rounded-12 py-8 font-12',textContent:n.name,style:{textAlign:'center'}});
+    const upd=()=>{const a=i===negSel;b.style.borderColor=a?'#d64545':'rgba(0,0,0,.15)';b.style.background=a?'rgba(214,69,69,.1)':'transparent';b.style.color=a?'#d64545':'#5a6b7a';};
+    b.onclick=()=>{
+      negSel=i;
+      negGrid.querySelectorAll('button').forEach(x=>{x.style.borderColor='rgba(0,0,0,.15)';x.style.background='transparent';x.style.color='#5a6b7a';});
+      upd();negAmountEl.textContent='-'+n.cost+' XP';
+    };
+    if(i===0)upd();
+    negGrid.appendChild(b);
+  });
+  negCard.appendChild(negGrid);
+  negCard.appendChild(el('div',{className:'font-13 text-gray mt-12 mb-8',textContent:'或自定义'}));
+  const negCustomRow=el('div',{className:'flex gap-8'});
+  const negInput=el('input',{type:'text',placeholder:'负面行为（如：玩游戏超时）',maxLength:30});
+  const negAmtInput=el('input',{type:'text',placeholder:'扣分1-100',inputMode:'numeric',style:{width:96,flexShrink:0}});
+  negCustomRow.appendChild(negInput);negCustomRow.appendChild(negAmtInput);
+  negCard.appendChild(negCustomRow);
+  negCard.appendChild(negAmountEl);
+  root.appendChild(negCard);
+
+  // ===== 类型切换 =====
+  const modeRow=el('div',{className:'flex gap-8 mb-16'});
+  const posBtn=el('button',{className:'btn-outline rounded-12 py-8 font-12 flex-1',textContent:'✅ 正面成长'});
+  const negBtn=el('button',{className:'btn-outline rounded-12 py-8 font-12 flex-1',textContent:'⚠️ 负面记录'});
+  modeRow.appendChild(posBtn);modeRow.appendChild(negBtn);
+  root.appendChild(modeRow);
+
   // Submit
   const submitBtn=el('button',{className:'btn btn-primary',textContent:'⚡ 提交记录'});
+  function refreshModeUI(){
+    const isPos=mode==='positive';
+    posBtn.classList.toggle('active',isPos);
+    negBtn.classList.toggle('active',!isPos);
+    dimCard.classList.toggle('hidden',!isPos);
+    contentCard.classList.toggle('hidden',!isPos);
+    diffCard.classList.toggle('hidden',!isPos);
+    moodCard.classList.toggle('hidden',!isPos);
+    xpCard.classList.toggle('hidden',!isPos);
+    negCard.classList.toggle('hidden',isPos);
+    submitBtn.textContent=isPos?'⚡ 提交记录':'⚠️ 记一笔负面';
+    submitBtn.style.background=isPos?'#f0a050':'#d64545';
+    submitBtn.style.color=isPos?'#2a1808':'#fff';
+  }
+  posBtn.onclick=()=>{if(mode!=='positive'){mode='positive';refreshModeUI();}};
+  negBtn.onclick=()=>{if(mode!=='negative'){mode='negative';refreshModeUI();}};
   submitBtn.onclick=()=>{
-    if(!content.trim()||submitting)return;
+    if(submitting)return;
+    let logData;
+    if(mode==='negative'){
+      const customText=negInput.value.trim();
+      const nm=customText||NEGATIVES[negSel].name;
+      let amt=NEGATIVES[negSel].cost;
+      if(customText){
+        amt=parseInt(negAmtInput.value,10);
+        if(isNaN(amt)||amt<=0||amt>100){alert('请输入 1-100 的扣分数');return;}
+      }
+      logData={dimension:NEGATIVES[negSel].dim,content:nm,difficulty:3,outcome:'completed',mood:3,energy:3,type:'negative',xpAmount:amt};
+    }else{
+      if(!content.trim())return;
+      logData={dimension:dim,content:content.trim(),difficulty:diff,outcome,mood,energy};
+    }
     submitting=true;
     submitBtn.textContent='记录中...';submitBtn.disabled=true;
-    const r=addDailyLog({dimension:dim,content:content.trim(),difficulty:diff,outcome,mood,energy});
-    resultDiv.className='card text-center slide-up';
-    resultDiv.style.border='2px solid '+(r.isCrit?'#f0c060':'rgba(240,160,90,.5)');
-    resultDiv.innerHTML='<div class="font-32 mb-8">'+(r.isCrit?'💥 暴击！':'✨ 记录成功！')+'</div><div class="font-24 font-bold text-xp">+'+r.xp+' XP</div><div class="font-12 text-gray2 mt-4">已分配到 '+DIMS[dim].name+' 属性</div>'+(r.newAchievements?.length>0?'<div class="mt-8 text-gold font-13">🏆 '+r.newAchievements.map(a=>a.name).join('、')+'</div>':'');
-    ta.value='';content='';countEl.textContent='0/500';
-    setTimeout(()=>{submitting=false;submitBtn.textContent='⚡ 提交记录';submitBtn.disabled=false;resultDiv.className='hidden';},2500);
+    const r=addDailyLog(logData);
+    if(mode==='negative'){
+      resultDiv.className='card text-center slide-up';
+      resultDiv.style.border='2px solid rgba(214,69,69,.6)';
+      resultDiv.innerHTML='<div class="font-32 mb-8">⚠️</div><div class="font-24 font-bold" style="color:#d64545">'+r.xp+' XP</div><div class="font-12 text-gray2 mt-4">已扣除（'+DIMS[logData.dimension].name+'）</div>';
+      negInput.value='';negAmtInput.value='';
+    }else{
+      resultDiv.className='card text-center slide-up';
+      resultDiv.style.border='2px solid '+(r.isCrit?'#f0c060':'rgba(240,160,90,.5)');
+      resultDiv.innerHTML='<div class="font-32 mb-8">'+(r.isCrit?'💥 暴击！':'✨ 记录成功！')+'</div><div class="font-24 font-bold text-xp">+'+r.xp+' XP</div><div class="font-12 text-gray2 mt-4">已分配到 '+DIMS[dim].name+' 属性</div>'+(r.newAchievements?.length>0?'<div class="mt-8 text-gold font-13">🏆 '+r.newAchievements.map(a=>a.name).join('、')+'</div>':'');
+      ta.value='';content='';countEl.textContent='0/500';
+    }
+    setTimeout(()=>{submitting=false;submitBtn.textContent=mode==='negative'?'⚠️ 记一笔负面':'⚡ 提交记录';submitBtn.disabled=false;resultDiv.className='hidden';},2500);
   };
   root.appendChild(submitBtn);
+  refreshModeUI();
   main.appendChild(root);
 }
 
@@ -690,7 +828,9 @@ function renderLogs(container,filter,onFilter){
     left.appendChild(badgeRow);
     left.appendChild(el('p',{className:'font-13 text-gray line-clamp-2',textContent:log.content}));
     const right=el('div',{className:'text-right flex-shrink-0 ml-8'});
-    right.appendChild(el('div',{className:'font-13 font-bold text-xp',textContent:'+'+log.xp+' XP'}));
+    const xpText=log.xp<0?(log.xp+' XP'):('+'+log.xp+' XP');
+    const xpClass=log.xp<0?'font-13 font-bold text-red':'font-13 font-bold text-xp';
+    right.appendChild(el('div',{className:xpClass,textContent:xpText}));
     right.appendChild(el('div',{className:'font-12 text-gray2',textContent:fmtDate(log.date)+' '+fmtTime(log.timestamp)}));
     head.appendChild(left);head.appendChild(right);
     card.appendChild(head);
@@ -840,7 +980,7 @@ function renderSettings(main){
 
   const exportBtn=el('button',{style:{width:'100%',padding:'12px 0',background:'rgba(217,119,6,.08)',color:'#d97706',borderRadius:12,fontSize:13,fontWeight:'bold',border:'1px solid rgba(217,119,6,.3)',cursor:'pointer',marginBottom:8},textContent:'📤 导出数据'});
   exportBtn.onclick=()=>{
-    const data=JSON.stringify({version:1,exportedAt:now(),character:state.character,attributes:state.attributes,dailyLogs:state.dailyLogs,assessments:state.assessments,achievements:state.achievements,shop:state.shop},null,2);
+    const data=JSON.stringify({version:1,exportedAt:now(),character:state.character,attributes:state.attributes,dailyLogs:state.dailyLogs,assessments:state.assessments,achievements:state.achievements,shop:state.shop,todos:state.todos},null,2);
     const blob=new Blob([data],{type:'application/json'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=url;a.download='earth-online-backup-'+dateStr()+'.json';a.click();
@@ -858,6 +998,7 @@ function renderSettings(main){
         const d=JSON.parse(ev.target.result);
         if(!d.version)throw Error();
         if(!d.shop)d.shop={custom:[],redeemed:[]};
+        if(!d.todos)d.todos=[];
         state={...d};
         save();
         alert('导入成功！');
@@ -876,7 +1017,7 @@ function renderSettings(main){
     overlay.innerHTML='<div class="modal"><div class="text-center"><div class="font-32 mb-8">⚠️</div><div class="font-18 font-bold text-red mb-8">确认重置？</div><div class="font-13 text-gray mb-16">所有数据将被永久删除，此操作不可撤销！</div><div class="flex gap-8"><button class="btn-sm flex-1" style="background:rgba(0,0,0,.08);color:#5a6b7a;border:none;border-radius:12px;cursor:pointer">取消</button><button class="btn-sm flex-1" style="background:#d64545;color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:bold">确认重置</button></div></div></div>';
     overlay.querySelectorAll('button')[0].onclick=()=>overlay.remove();
     overlay.querySelectorAll('button')[1].onclick=()=>{
-      state={character:{name:'玩家',joinedAt:dateStr(),streak:0,lastActive:dateStr()},attributes:initAttrs(),dailyLogs:[],assessments:[],achievements:[],shop:{custom:[],redeemed:[]}};
+      state={character:{name:'玩家',joinedAt:dateStr(),streak:0,lastActive:dateStr()},attributes:initAttrs(),dailyLogs:[],assessments:[],achievements:[],shop:{custom:[],redeemed:[]},todos:[]};
       save();
       overlay.remove();
       render();
