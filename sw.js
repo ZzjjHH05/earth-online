@@ -3,7 +3,7 @@
 //   - 页面/导航请求：network-first（先取网络，失败回退缓存）→ 部署新版本后自动更新
 //   - 静态资源：cache-first（缓存优先，未命中走网络并写入缓存）→ 离线可用
 // 版本升级：修改 CACHE_NAME（如 v2 → v3）即可让所有已安装用户强制换新缓存
-const CACHE_NAME = 'earth-online-v2';
+const CACHE_NAME = 'earth-online-v3';
 const PRECACHE_ASSETS = [
   './',
   './index.html',
