@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#87CEEB">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>地球OL - 人生RPG</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-title" content="地球OL">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#87CEEB;color:#1c2b39;overflow-x:hidden;min-height:100vh;min-height:100dvh;position:relative}
+#app{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;position:relative;z-index:1}
+.safe-bottom{padding-bottom:env(safe-area-inset-bottom,0)}
+.hidden{display:none!important}
+.flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-8{gap:8px}.gap-12{gap:12px}.gap-16{gap:16px}.flex-1{flex:1}.flex-wrap{flex-wrap:wrap}.text-center{text-align:center}.text-right{text-align:right}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.flex-shrink-0{flex-shrink:0}
+.mb-4{margin-bottom:4px}.mb-8{margin-bottom:8px}.mb-12{margin-bottom:12px}.mb-16{margin-bottom:16px}.mt-4{margin-top:4px}.mt-8{margin-top:8px}.mt-12{margin-top:12px}
+.p-16{padding:16px}.p-12{padding:12px}.p-8{padding:8px}.px-16{padding-left:16px;padding-right:16px}.py-8{padding-top:8px;padding-bottom:8px}.pb-32{padding-bottom:32px}
+.rounded-8{border-radius:8px}.rounded-12{border-radius:12px}.rounded-16{border-radius:16px}.rounded-20{border-radius:20px}.rounded-full{border-radius:50%}
+.font-12{font-size:12px}.font-13{font-size:13px}.font-14{font-size:14px}.font-16{font-size:16px}.font-18{font-size:18px}.font-20{font-size:20px}.font-24{font-size:24px}.font-32{font-size:32px}.font-40{font-size:40px}
+.font-bold{font-weight:bold}.text-white{color:#1c2b39}.text-gray{color:#5a6b7a}.text-gray2{color:#7a8896}.text-gold{color:#c9973e}.text-xp{color:#d97706}.text-red{color:#d64545}.text-green{color:#2e9e5b}
+.bg-card{background:rgba(255,255,255,.82)}.bg-dark{background:rgba(255,255,255,.55)}.border-card{border:1px solid rgba(0,0,0,.08)}
+.w-full{width:100%}.h-full{height:100%}.w-20{width:20px}.w-64{width:64px}.h-64{height:64px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.overflow-hidden{overflow:hidden}.text-ellipsis{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.line-clamp-2{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+/* Nav */
+#nav{background:rgba(255,255,255,.92);border-top:1px solid rgba(0,0,0,.08);flex-shrink:0;backdrop-filter:blur(10px)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;height:64px;border:none;background:none;cursor:pointer;color:#7a8896;transition:all .2s;font-size:11px}
+.nav-btn.active{color:#d97706;transform:scale(1.1)}
+.nav-btn .ico{font-size:20px;margin-bottom:2px}
+.nav-btn.active .dot{width:24px;height:2px;background:#d97706;border-radius:2px;margin-top:2px}
+/* Cards */
+.card{background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.08);border-radius:16px;padding:16px;margin-bottom:16px;backdrop-filter:blur(8px)}
+.card-glow{box-shadow:0 0 20px rgba(255,255,255,.6),inset 0 0 20px rgba(255,255,255,.15)}
+/* Level badge */
+.lv-badge{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,rgba(240,192,96,.3),rgba(240,192,96,.1));border:2px solid #c9973e;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.lv-title{position:absolute;bottom:-4px;right:-4px;background:rgba(255,255,255,.92);border-radius:8px;padding:2px 8px;border:1px solid rgba(201,151,62,.5);font-size:10px;color:#c9973e}
+/* Progress */
+.progress-bar{height:8px;background:rgba(0,0,0,.08);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;transition:width .5s}
+.progress-fill.gold{background:linear-gradient(90deg,#f0a050,#f0c060)}
+/* Attr card */
+.attr-card{background:rgba(255,255,255,.78);border:1px solid rgba(0,0,0,.08);border-radius:12px;padding:12px}
+.attr-card .xp-bar{height:8px;background:rgba(0,0,0,.08);border-radius:4px;overflow:hidden;margin:8px 0 4px}
+.attr-card .xp-fill{height:100%;border-radius:4px;transition:width .5s}
+/* Buttons */
+.btn{width:100%;padding:14px 0;border-radius:16px;font-size:14px;font-weight:bold;border:none;cursor:pointer;transition:all .2s}
+.btn-primary{background:#f0a050;color:#2a1808}
+.btn-primary:active{transform:scale(.95)}
+.btn-primary:disabled{background:rgba(0,0,0,.06);color:#8a96a3;cursor:not-allowed;transform:none}
+.btn-sm{padding:8px 16px;font-size:12px;border-radius:12px}
+.btn-outline{border:1px solid rgba(0,0,0,.15);background:transparent;color:#5a6b7a;cursor:pointer}
+.btn-outline.active{border-color:rgba(217,119,6,.5);background:rgba(217,119,6,.12);color:#d97706}
+/* Inputs */
+input[type=text],textarea{width:100%;background:rgba(255,255,255,.95);border:1px solid rgba(0,0,0,.15);border-radius:12px;padding:8px 12px;font-size:13px;color:#1c2b39;outline:none;resize:none}
+textarea:focus,input:focus{border-color:rgba(217,119,6,.5)}
+input[type=range]{width:100%;appearance:none;height:6px;background:rgba(0,0,0,.12);border-radius:3px;outline:none}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;background:#f0a050;cursor:pointer;border:2px solid #fff}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);backdrop-filter:blur(4px)}
+.modal{background:rgba(255,255,255,.97);border-radius:16px;padding:20px;max-width:320px;width:100%;margin:0 16px;border:1px solid rgba(0,0,0,.1);backdrop-filter:blur(12px)}
+/* Toast */
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:200;background:rgba(255,255,255,.97);border:2px solid #c9973e;border-radius:16px;padding:20px;text-align:center;animation:toastIn .3s ease-out;pointer-events:none;backdrop-filter:blur(12px)}
+.toast.xp{border-color:rgba(217,119,6,.5)}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,-50%) scale(.8)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.slide-up{animation:slideUp .3s ease-out}
+/* Radar chart SVG */
+#radar-svg{width:100%;max-width:340px;margin:0 auto}
+.radar-label{font-size:11px;fill:#5a6b7a;text-anchor:middle}
+.radar-polygon{fill:rgba(59,130,196,.18);stroke:#3b82c4;stroke-width:2}
+.radar-dot{fill:#3b82c4;stroke:#fff;stroke-width:1.5}
+.radar-grid{fill:none;stroke:rgba(0,0,0,.12);stroke-width:1}
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:2px}
+html{overscroll-behavior:none}
+::selection{background:rgba(135,206,235,.5);color:#1c2b39}
+/* Heatmap */
+.heat-grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,10px);grid-template-columns:repeat(26,10px);gap:3px;overflow-x:auto;padding-bottom:4px}
+.heat-cell{width:10px;height:10px;border-radius:2px;background:rgba(0,0,0,.06)}
+.heat-cell.l1{background:rgba(240,160,90,.25)}
+.heat-cell.l2{background:rgba(240,160,90,.5)}
+.heat-cell.l3{background:rgba(240,160,90,.75)}
+.heat-cell.l4{background:#f0a050}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ==================== DATA LAYER ====================
+const DIMS = {
+  intelligence:{id:'intelligence',name:'智力',icon:'📚',color:'#60a0ff',desc:'知识储备、技能掌握、认知提升'},
+  emotional:{id:'emotional',name:'情商',icon:'💬',color:'#f060a0',desc:'社交能力、情绪管理、人际关系'},
+  vitality:{id:'vitality',name:'体能',icon:'💪',color:'#60f080',desc:'运动锻炼、饮食健康、精力管理'},
+  wealth:{id:'wealth',name:'事业',icon:'💰',color:'#f0d060',desc:'职业发展、收入理财、事业成就'},
+  willpower:{id:'willpower',name:'自律',icon:'🎯',color:'#c060f0',desc:'习惯养成、自控力、专注度'},
+  spiritual:{id:'spiritual',name:'心灵',icon:'🌟',color:'#f0a060',desc:'阅读思考、冥想修行、价值观成长'}
+};
+const DIM_IDS = Object.keys(DIMS);
+
+function dimLevel(xp){return Math.floor(xp/120)+1}
+function charLevel(attrs){const lvls=Object.values(attrs).map(a=>dimLevel(a.xp));return Math.floor(lvls.reduce((s,l)=>s+l,0)/lvls.length)}
+function totalXP(attrs){return Object.values(attrs).reduce((s,a)=>s+a.xp,0)}
+
+function calcXP(diff,outcome,streak){
+  const base=diff*20;
+  const om={completed:1,partial:0.5,failed:0.1};
+  const sb=Math.min(streak*0.05,0.5);
+  const isCrit=Math.random()<0.1;
+  return {xp:Math.round(base*(om[outcome]||0.5)*(1+sb)*(isCrit?2:1)),isCrit};
+}
+
+const ACHIEVEMENTS=[
+  {id:'first_log',name:'初次记录',desc:'完成第一次成长记录',icon:'📝',check:s=>s.dailyLogs.length>=1},
+  {id:'ten_logs',name:'渐入佳境',desc:'累计完成10次记录',icon:'📋',check:s=>s.dailyLogs.length>=10},
+  {id:'fifty_logs',name:'持之以恒',desc:'累计完成50次记录',icon:'📚',check:s=>s.dailyLogs.length>=50},
+  {id:'first_assess',name:'自我审视',desc:'完成第一次自我评估',icon:'🔍',check:s=>s.assessments.length>=1},
+  {id:'streak_3',name:'三日之约',desc:'连续记录3天',icon:'🔥',check:s=>s.character.streak>=3},
+  {id:'streak_7',name:'七日之约',desc:'连续记录7天',icon:'⭐',check:s=>s.character.streak>=7},
+  {id:'streak_30',name:'月度修行',desc:'连续记录30天',icon:'👑',check:s=>s.character.streak>=30},
+  {id:'level_5',name:'初出茅庐',desc:'角色达到5级',icon:'🌱',check:s=>charLevel(s.attributes)>=5},
+  {id:'level_10',name:'小有所成',desc:'角色达到10级',icon:'🌿',check:s=>charLevel(s.attributes)>=10},
+  {id:'level_20',name:'登堂入室',desc:'角色达到20级',icon:'🌳',check:s=>charLevel(s.attributes)>=20},
+  {id:'dim_10',name:'专精一道',desc:'任意维度达到10级',icon:'🎯',check:s=>Object.values(s.attributes).some(a=>dimLevel(a.xp)>=10)},
+  {id:'all_dim_5',name:'全面发展',desc:'所有维度达到5级',icon:'🌈',check:s=>Object.values(s.attributes).every(a=>dimLevel(a.xp)>=5)}
+];
+
+function checkAch(state){
+  const unlocked=new Set((state.achievements||[]).map(a=>a.id));
+  return ACHIEVEMENTS.filter(a=>!unlocked.has(a.id)&&a.check(state));
+}
+
+function initAttrs(){const a={};DIM_IDS.forEach(id=>{a[id]={xp:0}});return a}
+
+function makeState(){
+  try{
+    const s=localStorage.getItem('earth-online');
+    if(s){
+      const d=JSON.parse(s);
+      if(!d.attributes)d.attributes=initAttrs();
+      if(!d.character)d.character={name:'玩家',joinedAt:dateStr(),streak:0,lastActive:dateStr()};
+      if(!d.dailyLogs)d.dailyLogs=[];
+      if(!d.assessments)d.assessments=[];
+      if(!d.achievements)d.achievements=[];
+      if(!d.shop)d.shop={custom:[],redeemed:[]};
+      return d;
+    }
+  }catch(e){}
+  return {character:{name:'玩家',joinedAt:dateStr(),streak:0,lastActive:dateStr()},attributes:initAttrs(),dailyLogs:[],assessments:[],achievements:[],shop:{custom:[],redeemed:[]}};
+}
+
+function dateStr(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function now(){return new Date().toISOString()}
+function yesterday(){return dateStr(new Date(Date.now()-86400000))}
+
+function save(){localStorage.setItem('earth-online',JSON.stringify({character:state.character,attributes:state.attributes,dailyLogs:state.dailyLogs,assessments:state.assessments,achievements:state.achievements,shop:state.shop}))}
+
+// ==================== STATE ====================
+let state=makeState();
+let listeners=[];
+
+function setState(updates){
+  Object.assign(state,updates);
+  save();
+  listeners.forEach(fn=>fn());
+}
+
+function onState(fn){listeners.push(fn);return ()=>listeners=listeners.filter(f=>f!==fn)}
+
+function addDailyLog(logData){
+  const today=dateStr();
+  const la=state.character.lastActive;
+  let ns;
+  if(today===la)ns=state.character.streak;
+  else if(la===yesterday())ns=state.character.streak+1;
+  else ns=1;
+
+  const {xp,isCrit}=calcXP(logData.difficulty,logData.outcome,ns);
+  const newLog={id:Date.now().toString(),date:today,timestamp:now(),dimension:logData.dimension,content:logData.content,difficulty:logData.difficulty,outcome:logData.outcome,mood:logData.mood||3,energy:logData.energy||3,xp,isCrit};
+
+  const na={...state.attributes};
+  na[logData.dimension]={xp:na[logData.dimension].xp+xp};
+
+  const newState={...state,character:{...state.character,streak:ns,lastActive:today},attributes:na,dailyLogs:[newLog,...state.dailyLogs]};
+  const nAch=checkAch(newState);
+  if(nAch.length>0)newState.achievements=[...state.achievements,...nAch.map(a=>({...a,unlockedAt:now()}))];
+
+  state=newState;
+  save();
+  listeners.forEach(fn=>fn());
+  return {xp,isCrit,newAchievements:nAch};
+}
+
+function addAssessment(scores,note){
+  const today=dateStr();
+  const newAssess={id:Date.now().toString(),date:today,timestamp:now(),scores,note:note||''};
+  const la=state.assessments[0];
+  let tXP=0;
+  const na={...state.attributes};
+  DIM_IDS.forEach(id=>{
+    if(scores[id]!==undefined){
+      const prev=la?.scores?.[id]||0;
+      const diff=scores[id]-prev;
+      if(diff>0){const xp=Math.round(diff*2);tXP+=xp;na[id]={xp:na[id].xp+xp};}
+    }
+  });
+  const newState={...state,attributes:na,assessments:[newAssess,...state.assessments]};
+  const nAch=checkAch(newState);
+  if(nAch.length>0)newState.achievements=[...state.achievements,...nAch.map(a=>({...a,unlockedAt:now()}))];
+  state=newState;
+  save();
+  listeners.forEach(fn=>fn());
+  return {totalXP:tXP};
+}
+
+// ==================== RENDER ====================
+const app=document.getElementById('app');
+let currentTab='home';
+let toastEl=null;
+
+function showToast(html,cls=''){
+  if(toastEl)toastEl.remove();
+  toastEl=el('div',{className:'toast '+cls,innerHTML:html});
+  app.appendChild(toastEl);
+  setTimeout(()=>{if(toastEl)toastEl.remove();toastEl=null;},2800);
+}
+
+function el(tag,props,...children){
+  if(!props||typeof props!=='object'||props instanceof Node){children.unshift(props);props={};}
+  const e=document.createElement(tag);
+  for(const[k,v]of Object.entries(props)){
+    if(k==='className')e.className=v;
+    else if(k.startsWith('on'))e.addEventListener(k.slice(2).toLowerCase(),v);
+    else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);
+    else if(k==='innerHTML')e.innerHTML=v;
+    else if(k==='textContent')e.textContent=v;
+    else e.setAttribute(k,v);
+  }
+  children.forEach(c=>{
+    if(typeof c==='string'||typeof c==='number')e.appendChild(document.createTextNode(c));
+    else if(c instanceof Node)e.appendChild(c);
+  });
+  return e;
+}
+
+function render(){
+  app.innerHTML='';
+  const main=el('div',{className:'flex-1 overflow-y-auto overflow-x-hidden'});
+  if(currentTab==='home')renderHome(main);
+  else if(currentTab==='log')renderLog(main);
+  else if(currentTab==='assess')renderAssess(main);
+  else if(currentTab==='history')renderHistory(main);
+  else if(currentTab==='shop')renderShop(main);
+  else if(currentTab==='settings')renderSettings(main);
+  app.appendChild(main);
+  renderNav();
+}
+
+function renderNav(){
+  const tabs=[{id:'home',label:'角色',icon:'🎮'},{id:'log',label:'记录',icon:'✏️'},{id:'assess',label:'评估',icon:'📊'},{id:'history',label:'历程',icon:'📜'},{id:'shop',label:'商店',icon:'🛍️'},{id:'settings',label:'设置',icon:'⚙️'}];
+  const nav=el('div',{id:'nav',className:'safe-bottom'});
+  const row=el('div',{className:'flex'});
+  tabs.forEach(t=>{
+    const active=t.id===currentTab;
+    const btn=el('button',{className:'nav-btn'+(active?' active':'')},el('span',{className:'ico',textContent:t.icon}),t.label,active?el('div',{className:'dot'}):'');
+    btn.onclick=()=>{if(currentTab!==t.id){currentTab=t.id;location.hash=t.id;render();}};
+    row.appendChild(btn);
+  });
+  nav.appendChild(row);
+  app.appendChild(nav);
+}
+
+function getTitle(l){
+  if(l>=50)return'传奇';if(l>=30)return'大师';if(l>=20)return'专家';
+  if(l>=15)return'精英';if(l>=10)return'进阶';if(l>=5)return'入门';return'新手';
+}
+
+function fmtDate(ds){
+  const d=new Date(ds),t=new Date();
+  const td=dateStr(),yd=yesterday();
+  if(ds===td)return'今天';
+  if(ds===yd)return'昨天';
+  const m=d.getMonth()+1,day=d.getDate();
+  if(d.getFullYear()===t.getFullYear())return m+'月'+day+'日';
+  return d.getFullYear()+'-'+m+'-'+day;
+}
+
+function fmtTime(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+
+function renderHome(main){
+  const cl=charLevel(state.attributes);
+  const txp=totalXP(state.attributes);
+  const recent=state.dailyLogs.filter(l=>l.date>=dateStr(new Date(Date.now()-6*86400000))).length;
+  const dimLvls={};DIM_IDS.forEach(id=>{dimLvls[id]=dimLevel(state.attributes[id].xp)});
+
+  // Character card
+  const charCard=el('div',{className:'card card-glow'},
+    el('div',{className:'flex gap-16 items-center'},
+      el('div',{style:{position:'relative',flexShrink:0}},
+        el('div',{className:'lv-badge'},
+          el('div',{className:'font-20 font-bold text-gold',textContent:'Lv'}),
+          el('div',{className:'font-20 font-bold text-gold',textContent:cl})
+        ),
+        el('div',{className:'lv-title',textContent:getTitle(cl)})
+      ),
+      el('div',{className:'flex-1'},
+        el('div',{className:'font-16 font-bold text-white text-ellipsis',textContent:state.character.name}),
+        el('div',{className:'flex gap-12 mt-4 font-12 text-gray'},
+          el('span',null,'总XP: ',el('span',{className:'text-xp font-bold',textContent:txp})),
+          el('span',null,'🔥 连续 ',el('span',{className:'text-gold',textContent:state.character.streak}),' 天')
+        ),
+        el('div',{className:'flex gap-12 mt-4 font-12 text-gray2'},
+          el('span',null,'📅 ',state.character.joinedAt,' 加入'),
+          el('span',null,'📝 近7天 ',recent,' 条')
+        )
+      )
+    ),
+    el('div',{className:'flex justify-between font-12 text-gray2 mb-4 mt-12',innerHTML:'<span>总成长进度</span><span>'+txp+' XP</span>'}),
+    el('div',{className:'progress-bar'},el('div',{className:'progress-fill gold',style:{width:Math.min(100,(txp%1000)/10)+'%'}}))
+  );
+  main.appendChild(charCard);
+
+  // Radar chart
+  const radarCard=el('div',{className:'card'},
+    el('div',{className:'font-14 font-bold text-gray mb-8',innerHTML:'<span>🎯</span> 能力雷达'})
+  );
+  const svg=createRadarSVG(dimLvls);
+  radarCard.appendChild(svg);
+  main.appendChild(radarCard);
+
+  // Attributes
+  const attrTitle=el('div',{className:'font-14 font-bold text-gray mb-12',innerHTML:'<span>📈</span> 属性面板'});
+  main.appendChild(attrTitle);
+  const grid=el('div',{className:'grid-2'});
+  DIM_IDS.forEach(id=>{
+    const dim=DIMS[id],lvl=dimLvls[id],xp=state.attributes[id].xp;
+    const xpInLvl=xp%120,pct=(xpInLvl/120)*100;
+    const card=el('div',{className:'attr-card'},
+      el('div',{className:'flex justify-between items-center mb-8'},
+        el('div',{className:'flex gap-8 items-center'},
+          el('span',{className:'font-18',textContent:dim.icon}),
+          el('span',{className:'font-12 font-bold text-gray',textContent:dim.name})
+        ),
+        el('span',{className:'font-12 font-bold',style:{color:dim.color},textContent:'Lv.'+lvl})
+      ),
+      el('div',{className:'xp-bar'},el('div',{className:'xp-fill',style:{width:pct+'%',background:dim.color,boxShadow:'0 0 8px '+dim.color+'40'}})),
+      el('div',{className:'flex justify-between font-12 text-gray2',innerHTML:'<span>'+xpInLvl+' / 120 XP</span><span>总 '+xp+' XP</span>'})
+    );
+    grid.appendChild(card);
+  });
+  main.appendChild(grid);
+
+  // Achievements
+  if(state.achievements.length>0){
+    const achTitle=el('div',{className:'font-14 font-bold text-gray mb-12 mt-8',innerHTML:'<span>🏆</span> 已解锁成就'});
+    main.appendChild(achTitle);
+    const achRow=el('div',{className:'flex flex-wrap gap-8'});
+    state.achievements.slice(-4).forEach(a=>{
+      achRow.appendChild(el('div',{className:'bg-card rounded-12 p-8 flex items-center gap-8 border-card'},
+        el('span',{className:'font-18',textContent:a.icon}),
+        el('div',null,el('div',{className:'font-12 font-bold text-gold',textContent:a.name}),el('div',{className:'font-12 text-gray2',textContent:a.desc}))
+      ));
+    });
+    main.appendChild(achRow);
+  }
+}
+
+function createRadarSVG(dimLvls){
+  const size=300,cx=size/2,cy=size/2,r=110;
+  const angles=DIM_IDS.map((_,i)=>Math.PI/2+(2*Math.PI*i)/DIM_IDS.length);
+  const levels=[0.25,0.5,0.75,1];
+
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 '+size+' '+size);
+  svg.setAttribute('width','100%');
+  svg.style.maxWidth='340px';
+  svg.style.display='block';
+  svg.style.margin='0 auto';
+
+  // Grid
+  levels.forEach(lvl=>{
+    const pts=angles.map(a=>{
+      const x=cx+r*lvl*Math.cos(a),y=cy-r*lvl*Math.sin(a);
+      return x+','+y;
+    }).join(' ');
+    const poly=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    poly.setAttribute('points',pts);
+    poly.setAttribute('class','radar-grid');
+    svg.appendChild(poly);
+  });
+
+  // Axes
+  angles.forEach(a=>{
+    const ex=cx+r*Math.cos(a),ey=cy-r*Math.sin(a);
+    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',cx);line.setAttribute('y1',cy);
+    line.setAttribute('x2',ex);line.setAttribute('y2',ey);
+    line.setAttribute('class','radar-grid');
+    svg.appendChild(line);
+  });
+
+  // Data polygon
+  const dataPts=angles.map((a,i)=>{
+    const id=DIM_IDS[i],lvl=Math.min(dimLvls[id],30);
+    const val=lvl/30;
+    const x=cx+r*val*Math.cos(a),y=cy-r*val*Math.sin(a);
+    return x+','+y;
+  }).join(' ');
+  const dataPoly=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+  dataPoly.setAttribute('points',dataPts);
+  dataPoly.setAttribute('class','radar-polygon');
+  svg.appendChild(dataPoly);
+
+  // Dots
+  angles.forEach((a,i)=>{
+    const id=DIM_IDS[i],lvl=Math.min(dimLvls[id],30);
+    const val=lvl/30;
+    const x=cx+r*val*Math.cos(a),y=cy-r*val*Math.sin(a);
+    const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx',x);circle.setAttribute('cy',y);
+    circle.setAttribute('r',4);
+    circle.setAttribute('class','radar-dot');
+    svg.appendChild(circle);
+  });
+
+  // Labels
+  angles.forEach((a,i)=>{
+    const id=DIM_IDS[i];
+    const lr=r+20;
+    const x=cx+lr*Math.cos(a),y=cy-lr*Math.sin(a);
+    const text=document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.setAttribute('x',x);text.setAttribute('y',y+4);
+    text.setAttribute('class','radar-label');
+    text.setAttribute('fill',DIMS[id].color);
+    text.textContent=DIMS[id].name;
+    svg.appendChild(text);
+  });
+
+  return svg;
+}
+
+// ==================== LOG PAGE ====================
+function renderLog(main){
+  let dim=DIM_IDS[0],content='',diff=3,outcome='completed',mood=3,energy=3;
+  let submitting=false;
+
+  const root=el('div',{className:'p-16 pb-32'});
+  root.appendChild(el('div',{className:'font-18 font-bold text-white mb-16',innerHTML:'<span>✏️</span> 成长记录'}));
+
+  const resultDiv=el('div',{className:'hidden'});
+  root.appendChild(resultDiv);
+
+  // Dimension picker
+  const dimCard=el('div',{className:'card'});
+  dimCard.appendChild(el('div',{className:'font-13 text-gray mb-12',textContent:'选择成长维度'}));
+  const dimGrid=el('div',{className:'grid-3'});
+  DIM_IDS.forEach(id=>{
+    const btn=el('button',{className:'btn-outline rounded-12 py-8 font-12',textContent:DIMS[id].icon+' '+DIMS[id].name,style:{textAlign:'center',border:'1px solid rgba(255,255,255,.08)'}});
+    function updateBtn(){const isActive=id===dim;btn.style.borderColor=isActive?DIMS[id].color:'rgba(255,255,255,.08)';btn.style.background=isActive?DIMS[id].color+'15':'transparent';btn.style.color=isActive?DIMS[id].color:'#888';}
+    btn.onclick=()=>{dim=id;updateBtn();dimGrid.querySelectorAll('button').forEach(b=>{if(b!==btn){b.style.borderColor='rgba(255,255,255,.08)';b.style.background='transparent';b.style.color='#888';}});};
+    if(id===DIM_IDS[0])updateBtn();
+    dimGrid.appendChild(btn);
+  });
+  dimCard.appendChild(dimGrid);
+  root.appendChild(dimCard);
+
+  // Content
+  const contentCard=el('div',{className:'card'});
+  contentCard.appendChild(el('div',{className:'font-13 text-gray mb-12',textContent:'记录内容'}));
+  const ta=el('textarea',{placeholder:'今天做了什么？学到了什么？有什么感悟？',rows:3,maxLength:500});
+  ta.oninput=()=>{content=ta.value;countEl.textContent=content.length+'/500';};
+  contentCard.appendChild(ta);
+  const countEl=el('div',{className:'text-right font-12 text-gray2 mt-4',textContent:'0/500'});
+  contentCard.appendChild(countEl);
+  root.appendChild(contentCard);
+
+  // Difficulty & Outcome
+  const diffCard=el('div',{className:'card'});
+  const diffLabel=el('div',{className:'flex justify-between font-13 mb-8',innerHTML:'<span class="text-gray">难度系数</span><span class="text-gray font-bold" id="diffVal">3 / 5</span>'});
+  diffCard.appendChild(diffLabel);
+  const diffSlider=el('input',{type:'range',min:1,max:5,value:3});
+  diffSlider.oninput=()=>{diff=Number(diffSlider.value);diffCard.querySelector('#diffVal').textContent=diff+' / 5';updateXPPreview();};
+  diffCard.appendChild(diffSlider);
+  diffCard.appendChild(el('div',{className:'flex justify-between font-12 text-gray2 mt-4',innerHTML:'<span>轻松</span><span>中等</span><span>地狱</span>'}));
+  diffCard.appendChild(el('div',{className:'font-13 text-gray mt-12 mb-8',textContent:'完成情况'}));
+  const outcomeRow=el('div',{className:'flex gap-8'});
+  ['completed','partial','failed'].forEach(o=>{
+    const labels={completed:'✅ 完成',partial:'🔶 部分完成',failed:'❌ 未完成'};
+    const btn=el('button',{className:'btn-outline rounded-12 py-8 font-12 flex-1',textContent:labels[o]});
+    btn.onclick=()=>{outcome=o;outcomeRow.querySelectorAll('button').forEach(b=>{b.classList.remove('active');});btn.classList.add('active');};
+    if(o==='completed')btn.classList.add('active');
+    outcomeRow.appendChild(btn);
+  });
+  diffCard.appendChild(outcomeRow);
+  root.appendChild(diffCard);
+
+  // Mood & Energy
+  const moodCard=el('div',{className:'card'});
+  moodCard.appendChild(el('div',{className:'font-13 text-gray mb-12',textContent:'今日心情'}));
+  const moodRow=el('div',{className:'flex justify-between'});
+  [{v:1,e:'😫',l:'糟糕'},{v:2,e:'😔',l:'不好'},{v:3,e:'😐',l:'一般'},{v:4,e:'😊',l:'不错'},{v:5,e:'🤩',l:'超棒'}].forEach(m=>{
+    const btn=el('button',{style:{display:'flex',flexDirection:'column',alignItems:'center',gap:4,padding:6,borderRadius:12,border:'none',background:'transparent',cursor:'pointer',transform:m.v===3?'scale(1.25)':'scale(1)',opacity:m.v===3?1:0.5}},el('span',{style:{fontSize:24},textContent:m.e}),el('span',{className:'font-12 text-gray2',textContent:m.l}));
+    btn.onclick=()=>{mood=m.v;moodRow.querySelectorAll('button').forEach((b,i)=>{b.style.transform=i===m.v-1?'scale(1.25)':'scale(1)';b.style.opacity=i===m.v-1?1:0.5;});};
+    moodRow.appendChild(btn);
+  });
+  moodCard.appendChild(moodRow);
+  moodCard.appendChild(el('div',{className:'flex justify-between font-13 mt-16 mb-8',innerHTML:'<span class="text-gray">精力水平</span><span class="text-gray font-bold" id="energyVal">3 / 5</span>'}));
+  const energySlider=el('input',{type:'range',min:1,max:5,value:3});
+  energySlider.oninput=()=>{energy=Number(energySlider.value);moodCard.querySelector('#energyVal').textContent=energy+' / 5';};
+  moodCard.appendChild(energySlider);
+  root.appendChild(moodCard);
+
+  // XP Preview
+  const xpCard=el('div',{className:'card text-center'});
+  xpCard.innerHTML='<div class="font-12 text-gray2 mb-4">预计获得</div><div class="font-24 font-bold text-xp" id="xpPreview">~60 XP</div><div class="font-12 text-gray2 mt-4">10% 暴击×2 | 连续加成最高+50%</div>';
+  root.appendChild(xpCard);
+  function updateXPPreview(){xpCard.querySelector('#xpPreview').textContent='~'+diff*20+' XP';}
+
+  // Submit
+  const submitBtn=el('button',{className:'btn btn-primary',textContent:'⚡ 提交记录'});
+  submitBtn.onclick=()=>{
+    if(!content.trim()||submitting)return;
+    submitting=true;
+    submitBtn.textContent='记录中...';submitBtn.disabled=true;
+    const r=addDailyLog({dimension:dim,content:content.trim(),difficulty:diff,outcome,mood,energy});
+    resultDiv.className='card text-center slide-up';
+    resultDiv.style.border='2px solid '+(r.isCrit?'#f0c060':'rgba(240,160,90,.5)');
+    resultDiv.innerHTML='<div class="font-32 mb-8">'+(r.isCrit?'💥 暴击！':'✨ 记录成功！')+'</div><div class="font-24 font-bold text-xp">+'+r.xp+' XP</div><div class="font-12 text-gray2 mt-4">已分配到 '+DIMS[dim].name+' 属性</div>'+(r.newAchievements?.length>0?'<div class="mt-8 text-gold font-13">🏆 '+r.newAchievements.map(a=>a.name).join('、')+'</div>':'');
+    ta.value='';content='';countEl.textContent='0/500';
+    setTimeout(()=>{submitting=false;submitBtn.textContent='⚡ 提交记录';submitBtn.disabled=false;resultDiv.className='hidden';},2500);
+  };
+  root.appendChild(submitBtn);
+  main.appendChild(root);
+}
+
+// ==================== ASSESS PAGE ====================
+function renderAssess(main){
+  const initialScores={};DIM_IDS.forEach(id=>{initialScores[id]=50;});
+  let scores={...initialScores},note='';
+  const la=state.assessments[0];
+  const root=el('div',{className:'p-16 pb-32'});
+  root.appendChild(el('div',{className:'font-18 font-bold text-white mb-16',innerHTML:'<span>📊</span> 自我评估'}));
+
+  const resultDiv=el('div',{className:'hidden'});
+  root.appendChild(resultDiv);
+
+  if(la)root.appendChild(el('div',{className:'card font-12 text-gray2',textContent:'上次评估：'+la.date}));
+
+  // Dimension sliders
+  DIM_IDS.forEach(id=>{
+    const dim=DIMS[id],prev=la?.scores?.[id];
+    const card=el('div',{className:'card'});
+    const header=el('div',{className:'flex justify-between items-center mb-12'});
+    header.innerHTML='<div class="flex items-center gap-8"><span class="font-18">'+dim.icon+'</span><span class="font-14 font-bold text-gray">'+dim.name+'</span></div>';
+    const scoreSpan=el('span',{className:'font-20 font-bold',style:{color:dim.color},textContent:'50'});
+    if(prev!==undefined){
+      const diffSpan=el('span',{className:'font-12 font-bold ml-8',textContent:''});
+      header.appendChild(el('div',{className:'flex items-center'},scoreSpan,diffSpan));
+      const updateDiff=()=>{const d=scores[id]-prev;diffSpan.textContent=d!==0?(d>0?'+':'')+d:'';diffSpan.style.color=d>0?'#60f080':d<0?'#f06060':'#888';};
+      card._updateDiff=updateDiff;
+    }else{
+      header.appendChild(scoreSpan);
+    }
+    card.appendChild(header);
+    const slider=el('input',{type:'range',min:0,max:100,value:50});
+    slider.style.accentColor=dim.color;
+    slider.oninput=()=>{scores[id]=Number(slider.value);scoreSpan.textContent=scores[id];if(card._updateDiff)card._updateDiff();};
+    card.appendChild(slider);
+    card.appendChild(el('div',{className:'flex justify-between font-12 text-gray2 mt-4',innerHTML:'<span>0</span><span>50</span><span>100</span>'}));
+    card.appendChild(el('div',{className:'font-12 text-gray2 mt-8',textContent:dim.desc}));
+    root.appendChild(card);
+  });
+
+  const noteTa=el('textarea',{placeholder:'评估备注（可选）',rows:2,maxLength:200});
+  noteTa.oninput=()=>{note=noteTa.value;};
+  root.appendChild(el('div',{className:'card'},noteTa));
+
+  const submitBtn=el('button',{className:'btn btn-primary',textContent:'📊 提交评估'});
+  submitBtn.onclick=()=>{
+    const r=addAssessment(scores,note.trim());
+    resultDiv.className='card text-center slide-up';
+    resultDiv.style.border='2px solid rgba(240,160,90,.5)';
+    resultDiv.innerHTML='<div class="font-24 mb-4">📊</div><div class="font-16 font-bold text-xp">评估完成！</div><div class="font-13 text-gray mt-4">获得 '+r.totalXP+' XP</div>';
+    setTimeout(()=>{resultDiv.className='hidden';},3000);
+  };
+  root.appendChild(submitBtn);
+  main.appendChild(root);
+}
+
+// ==================== HISTORY PAGE ====================
+function renderHistory(main){
+  let filter='all',viewMode='logs';
+  const root=el('div',{className:'p-16 pb-32'});
+  root.appendChild(el('div',{className:'font-18 font-bold text-white mb-16',innerHTML:'<span>📜</span> 成长历程'}));
+
+  // 打卡热力图（最近26周）
+  root.appendChild(buildHeatmapCard());
+
+  const tabRow=el('div',{className:'flex bg-card rounded-12 p-4 border-card mb-16'});
+  const logTab=el('button',{className:'btn-outline rounded-8 py-8 font-12 font-bold flex-1 active',textContent:'📝 记录 ('+state.dailyLogs.length+')'});
+  const assessTab=el('button',{className:'btn-outline rounded-8 py-8 font-12 font-bold flex-1',textContent:'📊 评估 ('+state.assessments.length+')'});
+  logTab.onclick=()=>{viewMode='logs';logTab.classList.add('active');assessTab.classList.remove('active');updateView();};
+  assessTab.onclick=()=>{viewMode='assessments';assessTab.classList.add('active');logTab.classList.remove('active');updateView();};
+  tabRow.appendChild(logTab);tabRow.appendChild(assessTab);
+  root.appendChild(tabRow);
+
+  const contentArea=el('div');
+  root.appendChild(contentArea);
+
+  function updateView(){
+    contentArea.innerHTML='';
+    if(viewMode==='logs')renderLogs(contentArea,filter,newFilter=>{filter=newFilter;updateView();});
+    else renderAssessments(contentArea);
+  }
+  updateView();
+  main.appendChild(root);
+}
+
+function buildHeatmapCard(){
+  const card=el('div',{className:'card'});
+  card.appendChild(el('div',{className:'font-14 font-bold text-gray mb-8',innerHTML:'<span>🔥</span> 打卡热力图 <span class="font-12 text-gray2" style="font-weight:normal">近 26 周</span>'}));
+
+  const countByDate={};
+  state.dailyLogs.forEach(l=>{countByDate[l.date]=(countByDate[l.date]||0)+1;});
+
+  const WEEKS=26;
+  const today=new Date();
+  const monday=new Date(today);monday.setDate(monday.getDate()-((today.getDay()+6)%7));
+  const start=new Date(monday);start.setDate(start.getDate()-(WEEKS-1)*7);
+
+  const grid=el('div',{className:'heat-grid'});
+  let total=0,recent30=0;
+  const cutoff30=dateStr(new Date(Date.now()-29*86400000));
+  for(let w=0;w<WEEKS;w++){
+    for(let d=0;d<7;d++){
+      const dt=new Date(start);dt.setDate(start.getDate()+w*7+d);
+      const ds=dateStr(dt);
+      const c=countByDate[ds]||0;
+      total+=c;
+      if(ds>=cutoff30&&ds<=dateStr())recent30+=c;
+      grid.appendChild(el('div',{className:'heat-cell'+(c>0?' l'+Math.min(c,4):''),title:ds+(c>0?' · '+c+' 条记录':'')}));
+    }
+  }
+  card.appendChild(grid);
+
+  const legend=el('div',{className:'flex justify-between items-center mt-8'});
+  const legLeft=el('div',{className:'flex items-center gap-4'});
+  legLeft.appendChild(el('span',{className:'font-12 text-gray2',textContent:'少'}));
+  [0,1,2,3,4].forEach(l=>legLeft.appendChild(el('div',{className:'heat-cell'+(l>0?' l'+l:'')})));
+  legLeft.appendChild(el('span',{className:'font-12 text-gray2',textContent:'多'}));
+  legend.appendChild(legLeft);
+  legend.appendChild(el('span',{className:'font-12 text-gray2',textContent:'近26周 '+total+' 条 · 近30天 '+recent30+' 条'}));
+  card.appendChild(legend);
+  return card;
+}
+
+function renderLogs(container,filter,onFilter){
+  const filters=[{id:'all',label:'全部'},...DIM_IDS.map(id=>({id,label:DIMS[id].name}))];
+  const filterRow=el('div',{className:'flex gap-8 overflow-x-auto mb-16'});
+  filters.forEach(f=>{
+    const btn=el('button',{className:'btn-outline rounded-20 py-8 px-16 font-12 flex-shrink-0',textContent:f.label});
+    if(f.id===filter)btn.classList.add('active');
+    btn.onclick=()=>{filter=f.id;filterRow.querySelectorAll('button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');onFilter(f.id);};
+    filterRow.appendChild(btn);
+  });
+  container.appendChild(filterRow);
+
+  const filteredLogs=filter==='all'?state.dailyLogs:state.dailyLogs.filter(l=>l.dimension===filter);
+  const stats=el('div',{className:'flex gap-8 mb-16'});
+  stats.innerHTML='<div class="bg-card rounded-12 p-12 border-card text-center flex-1"><div class="font-24 font-bold text-xp">'+filteredLogs.length+'</div><div class="font-12 text-gray2">总记录</div></div><div class="bg-card rounded-12 p-12 border-card text-center flex-1"><div class="font-24 font-bold text-gold">'+filteredLogs.reduce((s,l)=>s+l.xp,0)+'</div><div class="font-12 text-gray2">总XP</div></div>';
+  container.appendChild(stats);
+
+  if(filteredLogs.length===0){
+    container.appendChild(el('div',{className:'text-center py-32 text-gray',innerHTML:'<div class="font-40 mb-8">📭</div><div class="font-13">暂无记录</div><div class="font-12 mt-4">去「记录」页面写下第一条吧</div>'}));
+    return;
+  }
+
+  filteredLogs.forEach(log=>{
+    const dim=DIMS[log.dimension];
+    const card=el('div',{className:'card slide-up'});
+    const head=el('div',{className:'flex justify-between items-start'});
+    const left=el('div',{className:'flex-1'});
+    const badgeRow=el('div',{className:'flex items-center gap-8 mb-4'});
+    badgeRow.appendChild(el('span',{className:'font-18',textContent:dim.icon}));
+    badgeRow.appendChild(el('span',{className:'font-12 font-bold',style:{color:dim.color},textContent:dim.name}));
+    if(log.isCrit)badgeRow.appendChild(el('span',{className:'font-12 text-gold font-bold',textContent:'💥暴击'}));
+    left.appendChild(badgeRow);
+    left.appendChild(el('p',{className:'font-13 text-gray line-clamp-2',textContent:log.content}));
+    const right=el('div',{className:'text-right flex-shrink-0 ml-8'});
+    right.appendChild(el('div',{className:'font-13 font-bold text-xp',textContent:'+'+log.xp+' XP'}));
+    right.appendChild(el('div',{className:'font-12 text-gray2',textContent:fmtDate(log.date)+' '+fmtTime(log.timestamp)}));
+    head.appendChild(left);head.appendChild(right);
+    card.appendChild(head);
+    card.appendChild(el('div',{className:'flex gap-12 mt-8 font-12 text-gray2'},
+      el('span',null,'难度 '+log.difficulty+'/5'),
+      el('span',null,'心情 '+log.mood+'/5'),
+      el('span',null,'精力 '+log.energy+'/5')
+    ));
+    container.appendChild(card);
+  });
+}
+
+function renderAssessments(container){
+  const sorted=[...state.assessments].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(sorted.length===0){
+    container.appendChild(el('div',{className:'text-center py-32 text-gray',innerHTML:'<div class="font-40 mb-8">📊</div><div class="font-13">暂无评估记录</div><div class="font-12 mt-4">去「评估」页面进行第一次自评吧</div>'}));
+    return;
+  }
+  sorted.forEach(a=>{
+    const card=el('div',{className:'card'});
+    card.innerHTML='<div class="font-13 font-bold text-gray mb-12">📊 '+fmtDate(a.date)+'</div>';
+    DIM_IDS.forEach(id=>{
+      const dim=DIMS[id],score=a.scores[id];
+      const row=el('div',{className:'flex items-center gap-8 mb-8'});
+      row.innerHTML='<span class="font-14 w-20">'+dim.icon+'</span><span class="font-12 text-gray" style="width:28px">'+dim.name+'</span>';
+      const bar=el('div',{className:'flex-1',style:{height:8,background:'rgba(255,255,255,.05)',borderRadius:4,overflow:'hidden'}});
+      bar.appendChild(el('div',{style:{height:'100%',borderRadius:4,width:score+'%',background:dim.color}}));
+      row.appendChild(bar);
+      row.appendChild(el('span',{className:'font-12 font-bold text-right',style:{width:32,color:dim.color},textContent:score}));
+      card.appendChild(row);
+    });
+    if(a.note)card.appendChild(el('p',{className:'font-12 text-gray2 bg-dark rounded-8 p-8 mt-12',textContent:a.note}));
+    container.appendChild(card);
+  });
+}
+
+// ==================== SHOP PAGE ====================
+const REWARD_PRESETS=[
+  {name:'☕ 奶茶一杯',cost:150},
+  {name:'🎬 看一集剧',cost:100},
+  {name:'🎮 打游戏一小时',cost:80},
+  {name:'🛌 睡个懒觉',cost:60},
+  {name:'🍜 出去搓一顿',cost:200}
+];
+function shopSpent(){return ((state.shop&&state.shop.redeemed)||[]).reduce((s,r)=>s+(r.cost||0),0)}
+function shopBalance(){return Math.floor(totalXP(state.attributes)/10)-shopSpent()}
+
+function renderShop(main){
+  const root=el('div',{className:'p-16 pb-32'});
+  root.appendChild(el('div',{className:'font-18 font-bold text-white mb-16',innerHTML:'<span>🛍️</span> 奖励商店'}));
+
+  const balance=shopBalance();
+  const balCard=el('div',{className:'card text-center'});
+  balCard.appendChild(el('div',{className:'font-12 text-gray2 mb-4',textContent:'可用金币'}));
+  balCard.appendChild(el('div',{className:'font-32 font-bold',style:{color:'#d97706'},textContent:balance+' 🪙'}));
+  balCard.appendChild(el('div',{className:'font-12 text-gray2 mt-4',textContent:'总XP ÷ 10 自动换算 · 已花 '+shopSpent()+' 金币'}));
+  root.appendChild(balCard);
+
+  const listCard=el('div',{className:'card'});
+  listCard.appendChild(el('div',{className:'font-13 text-gray mb-12',textContent:'兑换奖励'}));
+  const all=[...REWARD_PRESETS,...((state.shop&&state.shop.custom)||[])];
+  all.forEach(rw=>{
+    const row=el('div',{className:'flex justify-between items-center mb-8'});
+    const info=el('div',{className:'flex-1'});
+    info.appendChild(el('div',{className:'font-13 font-bold text-white',textContent:rw.name}));
+    info.appendChild(el('div',{className:'font-12 text-gray2',textContent:rw.cost+' 金币'}));
+    row.appendChild(info);
+    const can=balance>=rw.cost;
+    const btn=el('button',{className:'btn-sm',style:{background:can?'rgba(217,119,6,.15)':'rgba(0,0,0,.06)',color:can?'#d97706':'#8a96a3',border:'1px solid '+(can?'rgba(217,119,6,.4)':'rgba(0,0,0,.1)'),borderRadius:12,cursor:can?'pointer':'not-allowed'},textContent:'兑换'});
+    btn.onclick=()=>{
+      if(shopBalance()<rw.cost)return;
+      state.shop=state.shop||{custom:[],redeemed:[]};
+      state.shop.redeemed=[{name:rw.name,cost:rw.cost,date:dateStr(),timestamp:now()},...(state.shop.redeemed||[])];
+      save();render();
+    };
+    row.appendChild(btn);
+    listCard.appendChild(row);
+  });
+  root.appendChild(listCard);
+
+  const addCard=el('div',{className:'card'});
+  addCard.appendChild(el('div',{className:'font-13 text-gray mb-12',textContent:'添加自定义奖励'}));
+  const nameInput=el('input',{type:'text',placeholder:'奖励名称（如：买支新笔）',maxLength:20});
+  addCard.appendChild(nameInput);
+  const costInput=el('input',{type:'text',placeholder:'花费金币（数字）',inputMode:'numeric',style:{marginTop:8}});
+  addCard.appendChild(costInput);
+  const addBtn=el('button',{className:'btn btn-primary',style:{marginTop:12},textContent:'＋ 添加'});
+  addBtn.onclick=()=>{
+    const name=nameInput.value.trim();const cost=parseInt(costInput.value,10);
+    if(!name||isNaN(cost)||cost<=0){alert('请输入奖励名称和有效的金币数');return;}
+    state.shop=state.shop||{custom:[],redeemed:[]};
+    state.shop.custom=[...(state.shop.custom||[]),{name,cost}];
+    save();render();
+  };
+  addCard.appendChild(addBtn);
+  root.appendChild(addCard);
+
+  const redeemed=((state.shop&&state.shop.redeemed)||[]);
+  const histCard=el('div',{className:'card'});
+  histCard.appendChild(el('div',{className:'font-13 text-gray mb-12',textContent:'最近兑换'}));
+  if(redeemed.length===0){
+    histCard.appendChild(el('div',{className:'text-center py-16 text-gray2 font-12',textContent:'还没有兑换记录，用努力换点奖励吧 🎉'}));
+  }else{
+    redeemed.forEach((r,i)=>{
+      const row=el('div',{className:'flex justify-between items-center mb-8'});
+      const info=el('div',{className:'flex-1'});
+      info.appendChild(el('div',{className:'font-13 font-bold text-white',textContent:r.name}));
+      info.appendChild(el('div',{className:'font-12 text-gray2',textContent:fmtDate(r.date)+' · -'+r.cost+' 金币'}));
+      row.appendChild(info);
+      const undo=el('button',{className:'btn-sm',style:{background:'rgba(0,0,0,.06)',color:'#8a96a3',border:'none',borderRadius:12,cursor:'pointer'},textContent:'撤销'});
+      undo.onclick=()=>{
+        state.shop.redeemed=state.shop.redeemed.filter((_,j)=>j!==i);
+        save();render();
+      };
+      row.appendChild(undo);
+      histCard.appendChild(row);
+    });
+  }
+  root.appendChild(histCard);
+  main.appendChild(root);
+}
+
+// ==================== SETTINGS PAGE ====================
+function renderSettings(main){
+  const root=el('div',{className:'p-16 pb-32'});
+  root.appendChild(el('div',{className:'font-18 font-bold text-white mb-16',innerHTML:'<span>⚙️</span> 设置'}));
+
+  // Name
+  const nameCard=el('div',{className:'card'});
+  nameCard.appendChild(el('div',{className:'font-13 text-gray mb-12',textContent:'角色名称'}));
+  const nameRow=el('div',{className:'flex gap-8'});
+  const nameInput=el('input',{type:'text',value:state.character.name,maxLength:12});
+  const saveBtn=el('button',{className:'btn-sm',style:{background:'rgba(217,119,6,.12)',color:'#d97706',border:'none',borderRadius:12,cursor:'pointer'},textContent:'保存'});
+  saveBtn.onclick=()=>{
+    if(!nameInput.value.trim())return;
+    state.character.name=nameInput.value.trim();
+    save();
+    listeners.forEach(fn=>fn());
+  };
+  nameRow.appendChild(nameInput);nameRow.appendChild(saveBtn);
+  nameCard.appendChild(nameRow);
+  root.appendChild(nameCard);
+
+  // Data
+  const dataCard=el('div',{className:'card'});
+  dataCard.appendChild(el('div',{className:'font-13 text-gray mb-12',textContent:'数据管理'}));
+
+  const exportBtn=el('button',{style:{width:'100%',padding:'12px 0',background:'rgba(217,119,6,.08)',color:'#d97706',borderRadius:12,fontSize:13,fontWeight:'bold',border:'1px solid rgba(217,119,6,.3)',cursor:'pointer',marginBottom:8},textContent:'📤 导出数据'});
+  exportBtn.onclick=()=>{
+    const data=JSON.stringify({version:1,exportedAt:now(),character:state.character,attributes:state.attributes,dailyLogs:state.dailyLogs,assessments:state.assessments,achievements:state.achievements,shop:state.shop},null,2);
+    const blob=new Blob([data],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='earth-online-backup-'+dateStr()+'.json';a.click();
+    URL.revokeObjectURL(url);
+  };
+  dataCard.appendChild(exportBtn);
+
+  const importBtn=el('button',{style:{width:'100%',padding:'12px 0',background:'rgba(201,151,62,.1)',color:'#c9973e',borderRadius:12,fontSize:13,fontWeight:'bold',border:'1px solid rgba(201,151,62,.3)',cursor:'pointer',marginBottom:8},textContent:'📥 导入数据'});
+  const fileInput=el('input',{type:'file',accept:'.json',style:{display:'none'}});
+  fileInput.onchange=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const d=JSON.parse(ev.target.result);
+        if(!d.version)throw Error();
+        if(!d.shop)d.shop={custom:[],redeemed:[]};
+        state={...d};
+        save();
+        alert('导入成功！');
+        render();
+      }catch(e){alert('导入失败，请检查文件格式');}
+    };
+    reader.readAsText(file);
+  };
+  importBtn.onclick=()=>fileInput.click();
+  dataCard.appendChild(importBtn);
+  dataCard.appendChild(fileInput);
+
+  const resetBtn=el('button',{style:{width:'100%',padding:'12px 0',background:'rgba(214,69,69,.1)',color:'#d64545',borderRadius:12,fontSize:13,fontWeight:'bold',border:'1px solid rgba(214,69,69,.3)',cursor:'pointer',marginTop:8},textContent:'🔄 重置所有数据'});
+  resetBtn.onclick=()=>{
+    const overlay=el('div',{className:'modal-overlay'});
+    overlay.innerHTML='<div class="modal"><div class="text-center"><div class="font-32 mb-8">⚠️</div><div class="font-18 font-bold text-red mb-8">确认重置？</div><div class="font-13 text-gray mb-16">所有数据将被永久删除，此操作不可撤销！</div><div class="flex gap-8"><button class="btn-sm flex-1" style="background:rgba(0,0,0,.08);color:#5a6b7a;border:none;border-radius:12px;cursor:pointer">取消</button><button class="btn-sm flex-1" style="background:#d64545;color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:bold">确认重置</button></div></div></div>';
+    overlay.querySelectorAll('button')[0].onclick=()=>overlay.remove();
+    overlay.querySelectorAll('button')[1].onclick=()=>{
+      state={character:{name:'玩家',joinedAt:dateStr(),streak:0,lastActive:dateStr()},attributes:initAttrs(),dailyLogs:[],assessments:[],achievements:[],shop:{custom:[],redeemed:[]}};
+      save();
+      overlay.remove();
+      render();
+    };
+    app.appendChild(overlay);
+  };
+  dataCard.appendChild(resetBtn);
+  root.appendChild(dataCard);
+
+  // About
+  const aboutCard=el('div',{className:'card'});
+  aboutCard.innerHTML='<div class="font-13 text-gray mb-12">关于</div><div class="font-12 text-gray2"><div class="flex justify-between mb-8"><span>应用名称</span><span class="text-gray">地球OL</span></div><div class="flex justify-between mb-8"><span>版本</span><span class="text-gray">v1.0.0</span></div><div class="flex justify-between mb-8"><span>数据存储</span><span class="text-gray">本地 (localStorage)</span></div><div class="flex justify-between"><span>加入日期</span><span class="text-gray">'+state.character.joinedAt+'</span></div></div>';
+  root.appendChild(aboutCard);
+
+  main.appendChild(root);
+}
+
+// ==================== INIT ====================
+// 支持 #hash 直达页面（如 index.html#shop）
+const TAB_IDS=['home','log','assess','history','shop','settings'];
+const hashTab=location.hash.replace('#','');
+if(TAB_IDS.includes(hashTab))currentTab=hashTab;
+try {
+  render();
+} catch(e) {
+  document.getElementById('app').innerHTML = '<div style="padding:40px;color:#f06060;font-size:14px;line-height:1.8"><b>初始化错误：</b><br>' + e.message + '<br><br><pre style="font-size:11px;color:#888;white-space:pre-wrap">' + (e.stack||'') + '</pre></div>';
+}
+
+// Register Service Worker for PWA
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>

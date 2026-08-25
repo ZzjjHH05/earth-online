@@ -1,0 +1,22 @@
+{
+  "name": "地球OL - 人生RPG",
+  "short_name": "地球OL",
+  "description": "将人生经历和成长可视化，RPG 游戏化个人成长追踪",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#87CEEB",
+  "theme_color": "#87CEEB",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
